@@ -1,39 +1,31 @@
-#  cloudbuild-backend.yaml
+substitutions:
+  _REGION: "northamerica-northeast2" 
+  _AR_REPO: "omar-bank-repo"
+  _SERVICE: "omar-bank-backend"
+  _IMAGE: "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}"
+  _TAG: "$SHORT_SHA"
 
-steps:
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - build
-      - '-t'
-      - 'northamerica-northeast2-docker.pkg.dev/molten-unison-462818-r2/app-repo/bank-backend:$COMMIT_SHA'
-      - .
-
-    id: Build Backend Container Image
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - push
-      - 'northamerica-northeast2-docker.pkg.dev/molten-unison-462818-r2/app-repo/bank-backend:$COMMIT_SHA'
-    id: Push Backend Image to Artifact Registry
-
-  - name: gcr.io/cloud-builders/gcloud
-    args:
-      - run
-      - deploy
-      - bank-backend
-      - '--image'
-      - 'northamerica-northeast2-docker.pkg.dev/molten-unison-462818-r2/app-repo/bank-backend:$COMMIT_SHA'
-      - '--region'
-      - northamerica-northeast2
-      - '--platform'
-      - managed
-      - '--port'
-      - '8080'
-      - '--timeout'
-      - '900'
-    id: Deploy Backend to Cloud Run
-
-images:
-  - 'northamerica-northeast2-docker.pkg.dev/molten-unison-462818-r2/app-repo/bank-backend:$COMMIT_SHA'
 options:
   logging: CLOUD_LOGGING_ONLY
-timeout: 1200s
+
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-t", "${_IMAGE}:${_TAG}", "."]
+
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "${_IMAGE}:${_TAG}"]
+
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      [
+        "run","deploy","${_SERVICE}",
+        "--image","${_IMAGE}:${_TAG}",
+        "--region","${_REGION}",
+        "--platform","managed",
+        "--allow-unauthenticated",
+        "--port","8080"
+      ]
+
+images:
+  - "${_IMAGE}:${_TAG}"
