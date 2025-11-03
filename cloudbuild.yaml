@@ -1,9 +1,7 @@
 substitutions:
-  _REGION: "northamerica-northeast2" 
+  _REGION: "northamerica-northeast2"
   _AR_REPO: "omar-bank-repo"
   _SERVICE: "omar-bank-backend"
-  _PROJECT_ID: "$PROJECT_ID"
-  _IMAGE: "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_SERVICE}"
   _TAG: "$SHORT_SHA"
 
 options:
@@ -11,22 +9,38 @@ options:
 
 steps:
   - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "${_IMAGE}:${_TAG}", "."]
+    args:
+      [
+        "build",
+        "-t",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:${_TAG}",
+        "."
+      ]
 
   - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "${_IMAGE}:${_TAG}"]
+    args:
+      [
+        "push",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:${_TAG}"
+      ]
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
     args:
       [
-        "run","deploy","${_SERVICE}",
-        "--image","${_IMAGE}:${_TAG}",
-        "--region","${_REGION}",
-        "--platform","managed",
+        "run",
+        "deploy",
+        "${_SERVICE}",
+        "--image",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:${_TAG}",
+        "--region",
+        "${_REGION}",
+        "--platform",
+        "managed",
         "--allow-unauthenticated",
-        "--port","8080"
+        "--port",
+        "8080"
       ]
 
 images:
-  - "${_IMAGE}:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:${_TAG}"
